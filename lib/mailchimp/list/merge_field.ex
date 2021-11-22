@@ -1,4 +1,5 @@
 defmodule Mailchimp.List.MergeField do
+  alias Mailchimp.HTTPClient
   alias Mailchimp.Link
 
   defstruct default_value: nil,
@@ -29,5 +30,12 @@ defmodule Mailchimp.List.MergeField do
       type: attributes[:type],
       links: Link.get_links_from_attributes(attributes)
     }
+  end
+
+
+  def delete(%__MODULE__{links: %{"delete" => %Link{href: href}}}) do
+    {:ok, %HTTPoison.Response{status_code: status_code}} = HTTPClient.delete(href)
+
+    {:ok, status_code}
   end
 end
