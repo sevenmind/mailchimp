@@ -51,7 +51,29 @@ defmodule Mailchimp.Member do
     }
   end
 
-  def update(user = %__MODULE__{links: %{"upsert" => %Link{href: href}}}) do
+  def update(user = %__MODULE__{links: %{"update" => %Link{href: href}}}) do
+    attrs =
+      user
+      |> Map.delete(:links)
+      |> Map.delete(:__struct__)
+
+    {:ok, response} = HTTPClient.patch(href, Jason.encode!(attrs))
+
+    case response do
+      %Response{status_code: 200, body: body} ->
+        {:ok, new(body)}
+
+      %Response{status_code: _, body: body} ->
+        {:error, body}
+    end
+  end
+
+  def update!(user) do
+    {:ok, user} = update(user)
+    user
+  end
+
+  def upsert(user = %__MODULE__{links: %{"upsert" => %Link{href: href}}}) do
     attrs =
       user
       |> Map.delete(:links)
@@ -68,8 +90,8 @@ defmodule Mailchimp.Member do
     end
   end
 
-  def update!(user) do
-    {:ok, user} = update(user)
+  def upsert!(user) do
+    {:ok, user} = upsert(user)
     user
   end
 
