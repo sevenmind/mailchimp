@@ -283,7 +283,7 @@ defmodule Mailchimp.List do
     members
   end
 
-  def merge_fields(%List{links: %{"merge-fields" => %Link{href: href}}}, query_params \\ %{}) do
+  def merge_fields(%__MODULE__{links: %{"merge-fields" => %Link{href: href}}}, query_params \\ %{}) do
     query_params = Map.put(query_params, :count, 1000)
 
     case HTTPClient.get(href, [], params: query_params) do
@@ -303,7 +303,7 @@ defmodule Mailchimp.List do
     merge_fields
   end
 
-  def create_merge_field(%List{links: %{"merge-fields" => %Link{href: href}}}, merge_field) do
+  def create_merge_field(%__MODULE__{links: %{"merge-fields" => %Link{href: href}}}, merge_field) do
     case HTTPClient.get(href) do
       {:ok, %Response{status_code: 200, body: body}} ->
         links = Link.get_links_from_attributes(body)
