@@ -3,7 +3,7 @@ defmodule Mailchimp.List do
   alias Mailchimp.HTTPClient
   alias Mailchimp.Link
   alias Mailchimp.Member
-  alias Mailchimp.List.InterestCategory
+  alias Mailchimp.List.{InterestCategory, MergeField}
 
   defstruct id: nil,
             name: nil,
@@ -197,8 +197,16 @@ defmodule Mailchimp.List do
     member
   end
 
-  def create_or_update_member!(list, email_address, status_if_new, merge_fields \\ %{}, additional_data \\ %{}) do
-    {:ok, member} = create_or_update_member(list, email_address, status_if_new, merge_fields, additional_data)
+  def create_or_update_member!(
+        list,
+        email_address,
+        status_if_new,
+        merge_fields \\ %{},
+        additional_data \\ %{}
+      ) do
+    {:ok, member} =
+      create_or_update_member(list, email_address, status_if_new, merge_fields, additional_data)
+
     member
   end
 
@@ -273,6 +281,51 @@ defmodule Mailchimp.List do
   def create_members!(list, email_addresses, status, merge_fields \\ %{}, additional_data \\ %{}) do
     {:ok, members} = create_members(list, email_addresses, status, merge_fields, additional_data)
     members
+  end
+
+  def merge_fields(%List{links: %{"merge-fields" => %Link{href: href}}}, query_params \\ %{}) do
+    query_params = Map.put(query_params, :count, 1000)
+
+    case HTTPClient.get(href, [], params: query_params) do
+      {:ok, %Response{status_code: 200, body: body}} ->
+        {:ok, Enum.map(body.merge_fields, &MergeField.new(&1))}
+
+      {:ok, %Response{status_code: _, body: body}} ->
+        {:error, body}
+
+      {:error, %Error{reason: reason}} ->
+        {:error, reason}
+    end
+  end
+
+  def merge_fields!(list, query_params \\ %{}) do
+    {:ok, merge_fields} = merge_fields(list, query_params)
+    merge_fields
+  end
+
+  def create_merge_field(%List{links: %{"merge-fields" => %Link{href: href}}}, merge_field) do
+    case HTTPClient.get(href) do
+      {:ok, %Response{status_code: 200, body: body}} ->
+        links = Link.get_links_from_attributes(body)
+        href = links["create"].href
+
+        case HTTPClient.post(href, Jason.encode!(merge_field)) do
+          {:ok, %Response{status_code: 200, body: body}} ->
+            {:ok, MergeField.new(body)}
+
+          {:ok, %Response{status_code: _, body: body}} ->
+            {:error, body}
+
+          {:error, error} ->
+            {:error, error}
+        end
+
+      {:ok, %Response{status_code: _, body: body}} ->
+        {:error, body}
+
+      {:error, error} ->
+        {:error, error}
+    end
   end
 
   defp md5(string) do
