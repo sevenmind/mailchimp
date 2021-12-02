@@ -91,4 +91,9 @@ defmodule Mailchimp.Config do
         "#{endpoint}/"
     end
   end
+
+  @spec http_options() :: keyword()
+  def http_options do
+    Application.get_env(:mailchimp, :http_options, [])
+  end
 end

@@ -48,6 +48,10 @@ defmodule Mailchimp.HTTPClient do
     end
   end
 
+  def process_request_options(options) do
+    Keyword.merge(Config.http_options(), options)
+  end
+
   @doc """
   Add Auth Header to every request that has none already.
 
